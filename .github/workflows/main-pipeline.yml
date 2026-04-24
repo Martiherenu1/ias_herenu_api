@@ -1,0 +1,51 @@
+name: CI/CD - Entornos QA y PRD
+
+# Se ejecuta al hacer PR hacia main o al hacer push (Merge) en main
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  # Integración Continua (CI) - QA
+  ci-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Instalar dependencias de desarrollo
+        run: pip install -r requirements-dev.txt
+
+      - name: Análisis de código con Bandit
+        run: bandit -r app/
+
+      - name: Ejecutar Tests Unitarios, Integración y Seguridad
+        run: pytest tests/unit/ tests/integration/ tests/security/
+
+  # Entrega Continua (CD) - QA
+  cd-qa:
+    needs: ci-qa
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Desplegar en Render (QA)
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_QA }}
+
+  # Entrega Continua (CD) - PRD (Requiere Aprobación Manual)
+  cd-prd:
+    needs: cd-qa
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production # Esto activa la aprobación manual configurada en GitHub
+    steps:
+      - name: Desplegar en Render (PRD)
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_PRD }}

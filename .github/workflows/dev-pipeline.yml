@@ -1,0 +1,41 @@
+name: CI/CD - Entorno DEV
+
+# Se ejecuta al hacer PR hacia develop o al hacer push (Merge) en develop
+on:
+  pull_request:
+    branches:
+      - develop
+  push:
+    branches:
+      - develop
+
+jobs:
+  # Integración Continua (CI)
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Instalar dependencias de desarrollo
+        run: pip install -r requirements-dev.txt
+
+      - name: Análisis de código con Bandit
+        run: bandit -r app/
+
+      - name: Ejecutar Tests Unitarios y de Integración
+        run: pytest tests/unit/ tests/integration/
+
+  # Entrega Continua (CD) - Solo se ejecuta si la CI fue exitosa y es un Push (Merge)
+  cd:
+    needs: ci
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Desplegar en Render (DEV)
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_DEV }}
