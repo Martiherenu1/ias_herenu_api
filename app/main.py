@@ -1,7 +1,7 @@
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 app = Flask(__name__)
 
@@ -39,6 +39,9 @@ def init_db():
 # Ejecutamos la inicialización al arrancar la app
 init_db()
 
+@app.route('/', methods=['GET'])
+def index():
+    return render_template('index.html')
 
 # Endpoint 1: Healthcheck (Requisito mínimo)
 @app.route('/health', methods=['GET'])

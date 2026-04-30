@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo API - IAS</title>
+    <!-- Usamos Bootstrap para que se vea lindo rápido -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Panel de Control - API IAS</h1>
+
+        <div class="row">
+            <!-- Formulario para crear usuarios -->
+            <div class="col-md-5 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">Crear Nuevo Usuario</div>
+                    <div class="card-body">
+                        <form id="formUsuario">
+                            <div class="mb-3">
+                                <label class="form-label">Nombre:</label>
+                                <input type="text" id="nombre" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email:</label>
+                                <input type="email" id="email" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">Guardar en Base de Datos</button>
+                        </form>
+                        <div id="mensajePost" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de usuarios -->
+            <div class="col-md-7">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        Usuarios Registrados
+                        <button onclick="cargarUsuarios()" class="btn btn-sm btn-outline-light">Actualizar</button>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaUsuarios">
+                                <!-- Acá se inyectan los datos de la API -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script para conectar el HTML con nuestra API Flask -->
+    <script>
+        // Función para cargar los usuarios haciendo un GET a la API
+        async function cargarUsuarios() {
+            try {
+                const response = await fetch('/users');
+                const data = await response.json();
+                
+                const tabla = document.getElementById('tablaUsuarios');
+                tabla.innerHTML = ''; // Limpiamos la tabla
+                
+                if(data.users && data.users.length > 0) {
+                    data.users.forEach(user => {
+                        tabla.innerHTML += `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td>${user.nombre}</td>
+                                <td>${user.email}</td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tabla.innerHTML = '<tr><td colspan="3" class="text-center">No hay usuarios en la DB</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Función para enviar el formulario haciendo un POST a la API
+        document.getElementById('formUsuario').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Evita que la página recargue
+            
+            const nombre = document.getElementById('nombre').value;
+            const email = document.getElementById('email').value;
+            const mensajeDiv = document.getElementById('mensajePost');
+
+            try {
+                const response = await fetch('/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, email })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    mensajeDiv.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+                    document.getElementById('formUsuario').reset(); // Limpia el form
+                    cargarUsuarios(); // Recarga la tabla para mostrar el nuevo
+                } else {
+                    mensajeDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                }
+            } catch (error) {
+                mensajeDiv.innerHTML = `<div class="alert alert-danger">Error de conexión</div>`;
+            }
+            
+            // Ocultar mensaje después de 3 segundos
+            setTimeout(() => { mensajeDiv.innerHTML = ''; }, 3000);
+        });
+
+        // Cargar los usuarios ni bien abre la página
+        cargarUsuarios();
+    </script>
+</body>
+</html>
