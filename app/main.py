@@ -82,6 +82,7 @@ def create_user():
         conn.commit()
         cur.close()
         conn.close()
+        print("Usuario creado con éxito", nuevo_usuario['nombre'], nuevo_usuario['email']  )
         return jsonify({"message": "Usuario creado con éxito", "data": nuevo_usuario}), 201
     except psycopg2.IntegrityError:
         return jsonify({"error": "El email ya está registrado"}), 409
